@@ -8,26 +8,31 @@ import ctypes.util
 import functools
 import logging
 
-logger = logging.getLogger(__name__)
+class SoundDevicePatcher:
+    def __init__(self):
+        self.logger = logging.getLogger(__name__)
+        self.original_find_library = ctypes.util.find_library
+        self.patch_library()
 
-logger.debug("Patching `ctypes.util.find_library` to find sounddevice...")
-_find_library_original = ctypes.util.find_library
+    def patch_library(self):
+        @functools.wraps(self.original_find_library)
+        def _find_library_patched(name):
+            if name == "portaudio":
+                return "libportaudio.so.2"
+            return self.original_find_library(name)
 
+        ctypes.util.find_library = _find_library_patched
+        self.logger.debug("Patched `ctypes.util.find_library` to find sounddevice.")
 
-@functools.wraps(_find_library_original)
-def _find_library_patched(name):
-    if name == "portaudio":
-        return "libportaudio.so.2"
-    else:
-        return _find_library_original(name)
+    def restore_library(self):
+        ctypes.util.find_library = self.original_find_library
+        self.logger.debug("Restored original `ctypes.util.find_library`.")
 
+def main():
+    patcher = SoundDevicePatcher()
+    import sounddevice  # Attempt to import sounddevice after patching
+    patcher.restore_library()
+    patcher.logger.info("sounddevice import successful!")
 
-ctypes.util.find_library = _find_library_patched
-
-import sounddevice
-
-logger.info("sounddevice import successful!")
-logger.debug("Restoring original `ctypes.util.find_library`...")
-ctypes.util.find_library = _find_library_original
-del _find_library_patched
-logger.debug("Original `ctypes.util.find_library` restored.")
+if __name__ == "__main__":
+    main()

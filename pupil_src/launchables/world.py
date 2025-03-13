@@ -81,6 +81,7 @@ def world(
     logger = logging.getLogger(__name__)
 
     def launch_eye_process(eye_id, delay=0):
+        """Launches an eye process with a specified delay."""
         n = {
             "subject": f"eye_process.should_start.{eye_id}",
             "eye_id": eye_id,
@@ -89,6 +90,7 @@ def world(
         ipc_pub.notify(n)
 
     def stop_eye_process(eye_id):
+        """Stops the specified eye process."""
         n = {
             "subject": f"eye_process.should_stop.{eye_id}",
             "eye_id": eye_id,
@@ -96,15 +98,18 @@ def world(
         ipc_pub.notify(n)
 
     def start_stop_eye(eye_id, make_alive):
+        """Starts or stops the eye process based on the make_alive flag."""
         if make_alive:
             launch_eye_process(eye_id)
         else:
             stop_eye_process(eye_id)
 
     def detection_enabled_getter() -> int:
+        """Returns the current state of pupil detection."""
         return int(g_pool.pupil_detection_enabled)
 
     def detection_enabled_setter(value: int):
+        """Sets the state of pupil detection and notifies."""
         is_on = bool(value)
         g_pool.pupil_detection_enabled = is_on
         n = {"subject": "pupil_detector.set_enabled", "value": is_on}
@@ -205,6 +210,7 @@ def world(
         process_was_interrupted = False
 
         def interrupt_handler(sig, frame):
+            """Handles interruption signals."""
             import traceback
 
             trace = traceback.format_stack(f=frame)
@@ -237,6 +243,7 @@ def world(
         g_pool.skip_driver_installation = skip_driver_installation
 
         def get_timestamp():
+            """Returns the current timestamp based on the timebase."""
             return get_time_monotonic() - g_pool.timebase.value
 
         g_pool.get_timestamp = get_timestamp
@@ -340,6 +347,7 @@ def world(
         ]
 
         def consume_events_and_render_buffer():
+            """Handles event consumption and rendering of the buffer."""
             gl_utils.glViewport(0, 0, *camera_render_size)
             for p in g_pool.plugins:
                 p.gl_display()
@@ -353,7 +361,6 @@ def world(
                     main_window, x, y, cached_scale=None
                 )
                 pos = normalize(pos, camera_render_size)
-                # Position in img pixels
                 pos = denormalize(pos, g_pool.capture.frame_size)
 
                 for plugin in g_pool.plugins:
@@ -374,6 +381,7 @@ def world(
 
         # Callback functions
         def on_resize(window, w, h):
+            """Handles window resizing events."""
             nonlocal window_size
             nonlocal camera_render_size
             nonlocal content_scale
@@ -414,30 +422,35 @@ def world(
                 consume_events_and_render_buffer()
 
         def on_window_key(window, key, scancode, action, mods):
+            """Handles key events for the window."""
             g_pool.gui.update_key(key, scancode, action, mods)
 
         def on_window_char(window, char):
+            """Handles character input events for the window."""
             g_pool.gui.update_char(char)
 
         def on_window_mouse_button(window, button, action, mods):
+            """Handles mouse button events for the window."""
             g_pool.gui.update_button(button, action, mods)
 
         def on_pos(window, x, y):
+            """Handles mouse position events for the window."""
             x, y = gl_utils.window_coordinate_to_framebuffer_coordinate(
                 window, x, y, cached_scale=None
             )
             g_pool.gui.update_mouse(x, y)
             pos = x, y
             pos = normalize(pos, camera_render_size)
-            # Position in img pixels
             pos = denormalize(pos, g_pool.capture.frame_size)
             for p in g_pool.plugins:
                 p.on_pos(pos)
 
         def on_scroll(window, x, y):
+            """Handles scroll events for the window."""
             g_pool.gui.update_scroll(x, y * scroll_factor)
 
         def on_drop(window, paths):
+            """Handles file drop events for the window."""
             for plugin in g_pool.plugins:
                 if plugin.on_drop(paths):
                     break
@@ -445,6 +458,7 @@ def world(
         tick = delta_t()
 
         def get_dt():
+            """Returns the delta time since the last frame."""
             return next(tick)
 
         # load session persistent settings
@@ -472,6 +486,7 @@ def world(
         )
 
         def handle_notifications(noti):
+            """Handles incoming notifications."""
             subject = noti["subject"]
             if subject == "pupil_detector.set_enabled":
                 g_pool.pupil_detection_enabled = noti["value"]
@@ -542,15 +557,14 @@ def world(
         g_pool.main_window = main_window
 
         def reset_restart():
+            """Resets settings and restarts the capture."""
             logger.warning("Resetting all settings and restarting Capture.")
             glfw.set_window_should_close(main_window, True)
             ipc_pub.notify({"subject": "clear_settings_process.should_start"})
             ipc_pub.notify({"subject": "world_process.should_start", "delay": 2.0})
 
         def toggle_general_settings(collapsed):
-            # this is the menu toggle logic.
-            # Only one menu can be open.
-            # If no menu is opened, the menubar should collapse.
+            """Toggles the general settings menu."""
             g_pool.menubar.collapsed = collapsed
             for m in g_pool.menubar.elements:
                 m.collapsed = True
@@ -572,7 +586,7 @@ def world(
         general_settings = ui.Growing_Menu("General", header_pos="headline")
 
         def set_window_size():
-            # Get current capture frame size
+            """Sets the window size based on capture frame size."""
             f_width, f_height = g_pool.capture.frame_size
 
             # Get current display scale factor
@@ -696,6 +710,7 @@ def world(
         window_update_timer = timer(1 / 60)
 
         def window_should_update():
+            """Checks if the window should be updated."""
             return next(window_update_timer)
 
         # trigger setup of window and gl sizes

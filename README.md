@@ -10,7 +10,7 @@ target="_blank">
 	</p>
 </a>
 
-**Open source eye tracking platform.**
+**Open source eye tracking platform. - Adapted By Hamish Leahy**
 
 Pupil is a project in active, community driven development. Pupil Core mobile eye tracking hardware is accessible, hackable, and affordable. The software is open source and written in `Python` and `C++` when speed is an issue.
 

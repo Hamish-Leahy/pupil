@@ -12,6 +12,7 @@ See COPYING and COPYING.LESSER for license details.
 import os
 import platform
 import sys
+import pytime
 
 running_from_bundle = getattr(sys, "frozen", False)
 if not running_from_bundle:
